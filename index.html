@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Babylon.js 3D Jersey Viewer</title>
+    <title>Babylon.js 3D Viewer</title>
     <style>
         html, body {
             overflow: hidden;
@@ -31,63 +31,47 @@
 
         const createScene = async function () {
             const scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.15, 1); // A nice dark grey background
 
-            // --- BACKGROUND COLOR ---
-            scene.clearColor = new BABYLON.Color4(1, 0, 0, 1); // Red background
-
-            // --- CAMERA ---
             const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2, 5, BABYLON.Vector3.Zero(), scene);
             camera.attachControl(canvas, true);
             camera.lowerRadiusLimit = 2;
             camera.upperRadiusLimit = 10;
-            camera.wheelPrecision = 50; // Controls zoom speed
+            camera.wheelPrecision = 50;
 
-            // --- LIGHTING ---
             const envTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("https://assets.babylonjs.com/environments/studio.env", scene);
             scene.environmentTexture = envTexture;
 
-            // --- MODEL LOADING AND SETUP ---
-            // Pointing the loader to the new gltf file
-            const result = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "jersey-front.gltf", scene);
+            // Using the new model name (after you've renamed it to remove the space)
+            const result = await BABYLON.SceneLoader.ImportMeshAsync("", "./", "BBALL_SS_SSHIRT_3D-2.gltf", scene);
 
             const rootMesh = result.meshes[0];
-            
-            // --- ORIENTATION & SPIN ---
-            // This model might have a different default orientation. Adjust if needed.
-            // rootMesh.rotation.x = -Math.PI / 2; // Keep this commented out unless the model is laying down
-            rootMesh.position = new BABYLON.Vector3(0, -0.9, 0);
+            rootMesh.position = new BABYLON.Vector3(0, -0.9, 0); // Center the model
 
             scene.onBeforeRenderObservable.add(() => {
                 const deltaTime = engine.getDeltaTime() / 1000; 
                 rootMesh.rotation.y += 0.2 * deltaTime;
             });
                 
-            // --- MATERIAL AND TEXTURES ---
-            const jerseyMesh = rootMesh.getChildMeshes()[0];
-            const material = jerseyMesh.material;
+            const childMesh = rootMesh.getChildMeshes()[0];
+            const material = childMesh.material;
 
             if (material instanceof BABYLON.PBRMaterial) {
-                // Using the new texture filenames
-                material.albedoTexture = new BABYLON.Texture("texture.png", scene);
-                material.bumpTexture = new BABYLON.Texture("jersey-front_map_normal.png", scene);
-                material.ambientTexture = new BABYLON.Texture("jersey-front_map_occlusion.png", scene);
+                // Using the new texture filenames from your latest screenshot
+                material.albedoTexture = new BABYLON.Texture("advanced_template.png", scene);
+                material.bumpTexture = new BABYLON.Texture("SS-Hoodie_MAPS_normal@0.5x.png", scene);
+                material.ambientTexture = new BABYLON.Texture("SS-Hoodie_MAPS_occlusion@0.5x.png", scene);
                 
                 material.useAmbientOcclusionFromMetallicTextureRed = true;
-                material.metallic = 0; // Set to 0 to make it look like fabric, not metal
-                material.roughness = 0.8; // Higher roughness for a less shiny, more fabric-like look
+                material.metallic = 0;
+                material.roughness = 0.8;
 
-                /*
-                // --- FABRIC OVERLAY (Currently Inactive) ---
-                // To activate this: 
-                // 1. Upload the 'texture-1.jpg' file to your GitHub repository.
-                // 2. Remove the '/*' at the start of this block and the '*/' at the end.
-
-                material.detailMap.texture = new BABYLON.Texture("texture-1.jpg", scene);
+                // Fabric overlay using your new 'texture.jpg' file
+                material.detailMap.texture = new BABYLON.Texture("texture.jpg", scene);
                 material.detailMap.isEnabled = true;
                 material.detailMap.uScale = 8;
                 material.detailMap.vScale = 8;
-                material.detailMap.level = 0.2;
-                */
+                material.detailMap.level = 0.15;
             }
 
             return scene;
