@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Babylon.js 3D Viewer - BARE MINIMUM TEST</title>
+    <title>Babylon.js 3D Jersey Viewer</title>
     <style>
         html, body {
             overflow: hidden;
@@ -11,6 +11,7 @@
             margin: 0;
             padding: 0;
         }
+
         #renderCanvas {
             width: 100%;
             height: 100%;
@@ -32,35 +33,66 @@
             const scene = new BABYLON.Scene(engine);
             scene.clearColor = new BABYLON.Color4(0.1, 0.1, 0.15, 1); // Dark grey background
 
-            const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 3, BABYLON.Vector3.Zero(), scene);
+            // An ArcRotateCamera is better for object viewing
+            const camera = new BABYLON.ArcRotateCamera("camera", -Math.PI / 2, Math.PI / 2.5, 3, new BABYLON.Vector3(0, 0.5, 0), scene);
             camera.attachControl(canvas, true);
+            camera.lowerRadiusLimit = 1.5;
+            camera.upperRadiusLimit = 10;
+            camera.wheelPrecision = 50;
 
-            // Basic lighting, no environment map to keep it simple
-            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+            // Use a studio environment for realistic lighting and reflections
+            const envTexture = BABYLON.CubeTexture.CreateFromPrefilteredData("https://assets.babylonjs.com/environments/studio.env", scene);
+            scene.environmentTexture = envTexture;
 
-            try {
-                // --- THIS IS THE ONLY PART WE ARE TESTING ---
-                // We are only trying to load the model and its .bin file.
-                // All texture loading has been removed.
-                const result = await BABYLON.SceneLoader.ImportMeshAsync(
-                    "", 
-                    "./", 
-                    "BBALL_SS_SSHIRT_3D-2.gltf", 
-                    scene
-                );
-                
-                const rootMesh = result.meshes[0];
-                rootMesh.position = new BABYLON.Vector3(0, -0.9, 0);
+            // Load the model using its ORIGINAL filename with the space
+            const result = await BABYLON.SceneLoader.ImportMeshAsync(
+                null, 
+                "./", 
+                "BBALL_SS_SSHIRT_3D 2.gltf", 
+                scene
+            );
 
-                scene.onBeforeRenderObservable.add(() => {
-                    rootMesh.rotation.y += 0.01;
-                });
+            // Get the root mesh to control the whole model
+            const rootMesh = scene.getMeshByName("__root__");
+            rootMesh.position.y = -0.9; // Adjust vertical position
 
-            } catch (e) {
-                // If it fails, we will know for sure the problem is the gltf or bin file.
-                console.error("The model import failed even on the bare minimum test.");
-                console.error(e);
+            // Find the specific part of the model to apply textures
+            const jerseyMesh = scene.getMeshByName("TOP");
+
+            if (jerseyMesh && jerseyMesh.material) {
+                const material = jerseyMesh.material;
+
+                // Ensure it's a PBR material
+                if (material instanceof BABYLON.PBRMaterial) {
+                    
+                    // --- APPLY TEXTURES ---
+                    const albedoTexture = new BABYLON.Texture("advanced_template.png", scene);
+                    
+                    // This flips the texture to match your model's UVs, just like in your Playground example
+                    albedoTexture.uScale = -1;
+                    albedoTexture.vScale = -1;
+                    
+                    material.albedoTexture = albedoTexture;
+                    material.bumpTexture = new BABYLON.Texture("SS-Hoodie_MAPS_normal@0.5x.png", scene);
+                    material.ambientTexture = new BABYLON.Texture("SS-Hoodie_MAPS_occlusion@0.5x.png", scene);
+                    
+                    // Fabric overlay texture
+                    material.detailMap.texture = new BABYLON.Texture("texture.jpg", scene);
+                    material.detailMap.isEnabled = true;
+                    material.detailMap.uScale = 12;
+                    material.detailMap.vScale = 12;
+                    material.detailMap.level = 0.1;
+
+                    // Adjust properties for a realistic fabric look
+                    material.metallic = 0.0;
+                    material.roughness = 0.9;
+                }
             }
+
+            // Spinning animation
+            scene.onBeforeRenderObservable.add(() => {
+                rootMesh.rotation.y += 0.005; // Slower, more cinematic spin
+            });
 
             return scene;
         };
